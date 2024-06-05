@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
-import JWT from 'jsonwebtoken';
+
 import dotenv from 'dotenv';
-import { User } from '../models/User';
-import { generateToken} from '../config/passport';
 import * as UserService from '../services/UserService';
 
 dotenv.config();
@@ -20,33 +18,12 @@ export const register = async (req: Request, res: Response) => {
 
         if(newUser instanceof Error) {
 
-            res.json({error: newUser.message});
+            return res.json({error: newUser.message});
 
         } else {
 
             res.status(201); 
-            res.json({id: User});
-        }
-
-        let hasUser = await User.findOne({where: { email }});
-
-        if(!hasUser) {
-
-            let newUser = await User.create({ email, password });
-            const token_1 = generateToken({id: newUser.id});
-
-            const token = JWT.sign(
-
-                {id: newUser.id, email: newUser.email }, 
-                process.env.JWT_SECRET_KEY as string,
-                {expiresIn: '2h'}
-            );
-
-            res.status(201);
-            res.json({ id: newUser.id, token });
-            res.json({ id: newUser.id, token_1 });
-        } else {
-            res.json({ error: 'E-mail já existe.' });
+            return res.json({id: newUser.id});
         }
     }
 
@@ -60,24 +37,23 @@ export const login = async (req: Request, res: Response) => {
         let email: string = req.body.email; 
         let password: string = req.body.password;
 
-        let user = await User.findOne({
-            where: {email, password}
-        });
+        const user = await UserService.findByEmail(email);
 
-        if(user) {
+        if(user && UserService.mathPassword(password, user.password)) {
 
-            const token = generateToken({id: user.id}); 
-            res.json({ status: true, token}); 
-
+            res.json({status: true});
             return;
         }
+
     }
 
     res.json({status: false});
 }
 
 export const list = async (req: Request, res: Response) => {
-    let users = await User.findAll();
+    
+    let users = await UserService.all();
+
     let list: string[] = [];
 
     for(let i in users) {

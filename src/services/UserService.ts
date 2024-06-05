@@ -14,6 +14,8 @@ export const createUser = async (email: string, password: string) =>{
             password: hash
         })
 
+        return newUser;
+
     } else {
 
         return new Error('E-mail já existente');
